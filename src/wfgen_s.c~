@@ -1,0 +1,37 @@
+#include<stdio.h>
+#include<wfgen.h>
+#include<stdlib.h>
+
+extern int sock;
+extern struct sockaddr_in from;
+extern from_len;
+
+
+
+
+
+
+
+int main()
+{
+
+
+socket_create();
+
+
+while(1)
+{
+
+
+nBytes = recvfrom(sock,rmsg,sizeof(rmsg),0,(struct sockaddr *)&from, &from_len);
+
+if(nBytes<0)
+
+{
+printf("error");
+}
+
+
+
+}
+}

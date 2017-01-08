@@ -1,0 +1,95 @@
+#include<stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <unistd.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include<stdlib.h>
+#include<wfgen.h>
+#define port 2525
+unsigned int rmsg[512];           
+unsigned int txmsg[512];
+int sockflags = MSG_DONTWAIT;
+int tos_vo,tos_vi,tos_be,tos_bk 
+tos_vo = 0xD0;
+tos_vi = 0xA0;
+tos_be = 0x00;
+tos_bk = 0x20;
+int WfaConRcvHello(struct station *,unsigned int *,int );
+int WfaConRcvConf(struct station *,unsigned int *,int );
+int WfaConRcvVOSnd(struct station *,unsigned int *,int );
+int WfaConRcvVOSndCyclic(struct station *,unsigned int *,int );
+int WfaConRcvVOSndE(struct station *,unsigned int *,int );
+int WfaConRcvVOE(struct station *,unsigned int *,int );
+consoleProcStatetbl_t consoleProcStatetbl[LAST_TEST+1][10] = {
+
+{WfaConRcvHello,WfaConRcvConf,WfaConRcvVOSnd      ,WfaConRcvVOE              ,WfaConWaitStop      ,WfaConWaitStop      ,0,0,0,0}
+}
+void create_apts_msg(int msg, unsigned int txbuf[],int id)
+{
+	struct apts_msg *t;
+
+	t = &apts_msgs[msg];
+	txbuf[ 1] = 0;
+	txbuf[ 2] = 0;
+	txbuf[ 3] = 0;
+	txbuf[ 4] = 0;
+	txbuf[ 5] = 0; 
+	txbuf[ 6] = 0; 
+	txbuf[ 7] = 0; 
+	txbuf[ 8] = 0; 
+	txbuf[ 9] = id;
+	txbuf[ 10] = t->cmd; 
+	strcpy((char *)&txbuf[11], t->name);
+	
+}
+
+int expectedmsgrcd(unsigned int *rmsg,unsigned long type,int tos)
+{
+  char type_ok=1;
+  char tos_ok=1;
+  int r;
+  char dsc;
+  type_ok=((rmsg[10] == type)? 1:0);
+
+  r = (type_ok&&tos_ok);
+
+  return r;
+  
+}
+
+ struct sockaddr_in from;
+int from_len=sizeof(from);
+ int sock;
+socket_create()
+{
+ sock=socket(AF_INET, SOCK_DGRAM, 0);
+       from.sin_family = AF_INET;
+	from.sin_port = htons(port);
+	from.sin_addr.s_addr = htonl(INADDR_ANY);
+int r = bind(sock, (struct sockaddr *)&from, sizeof(from));
+	if (r<0) 
+	{
+		perror("bind call failed");
+		exit(-1);
+	}
+return 0;
+
+}
+int WfaConRcvHello(struct station *sta,unsigned int *rmsg,int length)
+{
+  int r;
+  if(!expectedmsgrcd(rmsg,APTS_HELLO,tos_be))
+  {
+    printf("\r\nHello not recd or BAD TOS\n");
+  }
+  else
+  {
+    create_apts_msg(sta->cmd, txmsg,sta->myid);
+	r = sendto(sd, txmsg, 190, sockflags, (struct sockaddr *)&from, sizeof(from));
+    sta->state++;
+	if (traceflag) mpx("CMD send\n", txmsg, 64);
+  }
+
+}
